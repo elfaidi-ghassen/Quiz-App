@@ -1,106 +1,89 @@
-let qeustionsCount = document.querySelector(".count span")
-let category = document.querySelector(".category span")
-let bar = document.querySelector(".progress-bar")
-let questionText = document.querySelector(".quiz-area h2")
-let choicesArea = document.querySelector(".choices")
-let btn = document.querySelector(".submit-answer")
-let result = document.querySelector(".result")
+let counter = document.querySelector(".count span");
+let questionText = document.querySelector(".quiz-area h2");
+let choicesArea = document.querySelector(".choices");
+let category = document.querySelector(".category span");
+let result = document.querySelector(".result");
+let rank = document.querySelector(".rank");
+let btn = document.querySelector(".submit-answer");
+let bar = document.querySelector(".progress-bar");
 
-
-
-getQuestions()
+getQuestions();
 
 function getQuestions() {
-  let number = randInt(5, 12)
-  let apiLink = `https://opentdb.com/api.php?amount=${number}&category=9&type=multiple`
-  fetch(apiLink)
-  .then(response => response.json())
-  .then(response => {
-    console.log(response)
-    update(response)
-  })
-  .catch(err => console.error(err))
+	let nb = randInt(5, 10);
+	let apiLink = `https://opentdb.com/api.php?amount=${nb}&category=9&type=multiple`;
+	fetch(apiLink)
+		.then((response) => response.json())
+		.then((response) => update(response.results))
+		.catch((err) => console.error(err));
 }
 
 function update(questions) {
-  let correct = 0;
-    let QuestionNumber = 0
-  questions = questions.results
-  qeustionsCount.textContent = questions.length
-  category.textContent = questions[0].category.split(" ")[0]
-  bar.style.width =  `${0 * 100 / questions.length}%`
-  questionText.innerHTML = questions[0].question
-  // <!-- <li id="choice-1">James Bond</li> -->
-  createChoices(questions[QuestionNumber])
+	let correct = 0;
+	let i = 0; // number of questions
 
-  btn.onclick = function() {
-    if (QuestionNumber < questions.length-1  && document.querySelector(".working")) {
-      btn.classList.remove("working")
-      if(questions[QuestionNumber].correct_answer == document.querySelector(".selected").textContent) {
-        correct++
-      }
-      QuestionNumber++
-      questionText.innerHTML = questions[QuestionNumber].question
-      createChoices(questions[QuestionNumber])
-      bar.style.width =  `${(QuestionNumber + 1) * 100 / questions.length}%`
-    } else {
-      document.querySelector(".rank").textContent = correct == questions.length ? "Perfect!" : correct > questions.length/2 ? "Good, " : "bad, "
-      document.querySelector(".rank").classList.add(correct == questions.length ? "perfect" : correct > questions.length/2 ? "good" : "bad")
-      document.querySelector(".correct").textContent = correct
-      document.querySelector(".nb-qs").textContent = questions.length
+	// update HTML content
+	counter.textContent = questions.length;
+	category.textContent = questions[0].category;
+	questionText.innerHTML = questions[0].question;
 
-      result.style.display = "block"
+	createChoices(questions[i]);
 
-      btn.classList.remove("working")
-    }
-  }
+	btn.onclick = function () {
+		let selected = document.querySelector(".selected");
+		if (i < questions.length - 1 && document.querySelector(".working")) {
+			btn.classList.remove("working");
+
+			i++;
+			let correctAns = questions[i - 1].correct_answer;
+			correct += +(selected.textContent == correctAns);
+
+			questionText.innerHTML = questions[i].question;
+
+			createChoices(questions[i]);
+			let progress = (i * 100) / questions.length;
+			bar.style.width = `${progress}%`; // some math!
+		} else if (i >= questions.length - 1) {
+			let correctAns = questions[i].correct_answer;
+			correct += +(selected.textContent == correctAns);
+
+			rank.textContent = getRank(correct, questions.length, true);
+			rank.classList.add(getRank(correct, questions.length));
+
+			document.querySelector(".correct").textContent = correct;
+			document.querySelector(".nb-qs").textContent = questions.length;
+			result.style.display = "block";
+			btn.classList.remove("working");
+			bar.style.width = `${((i + 1) * 100) / questions.length}%`;
+		}
+	};
 }
 
 function createChoices(choices) {
-  while (document.querySelectorAll(".choices li").length > 0) {
-    document.querySelector(".choices li").remove()
-  }
+	while (document.querySelectorAll(".choices li").length > 0) {
+		document.querySelector(".choices li").remove();
+	}
 
-  let incorrectAnswers = choices.incorrect_answers
-  let correctAnswer = choices.correct_answer
-  let answers = [correctAnswer, ...incorrectAnswers]
-  answers = shuffle(answers)
-  createAnswers(answers)
+	let incorrectAnswers = choices.incorrect_answers;
+	let correctAnswer = choices.correct_answer;
+	let answers = [correctAnswer, ...incorrectAnswers];
+	answers = shuffle(answers);
+	createAnswers(answers);
 }
 
 function createAnswers(arr) {
+	for (let i = 0; i < arr.length; i++) {
+		let listItem = document.createElement("li");
+		let content = document.createTextNode(arr[i]);
+		listItem.appendChild(content);
+		choicesArea.appendChild(listItem);
 
-  for(let i = 0; i < arr.length; i++) {
-    let listItem = document.createElement("li")
-    let content = document.createTextNode(arr[i])
-    listItem.appendChild(content)
-    choicesArea.appendChild(listItem)
-
-    listItem.onclick = function() {
-      document.querySelectorAll(".choices li").forEach(li => {
-        return li.classList.remove("selected")
-      });
-      listItem.classList.add("selected")
-      btn.classList.add("working")
-    }
-  }
-
-
-}
-
-function shuffle(arr) {
-  let shuffled = []
-  while (arr.length > 0) {
-    let r = randInt(0, arr.length)
-    shuffled.push(arr[r])
-    arr = arr.filter((_, i) => i !=
-     r)
-  }
-  return shuffled
-}
-
-
-
-function randInt(a, b) {
-  return a + Math.floor(Math.random(b - a) * (b - a))
+		listItem.onclick = function () {
+			document.querySelectorAll(".choices li").forEach((li) => {
+				return li.classList.remove("selected");
+			});
+			listItem.classList.add("selected");
+			btn.classList.add("working");
+		};
+	}
 }
